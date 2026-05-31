@@ -6,20 +6,16 @@ from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 
+from accounts.throttles import BookingRateThrottle
 from catalog.models import Session
 from .models import Booking
 from .serializers import BookingSerializer, BookingCreateSerializer
 
 
-class BookingThrottle(ScopedRateThrottle):
-    scope = "booking"
-
-
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
-@throttle_classes([BookingThrottle])
+@throttle_classes([BookingRateThrottle])
 def create_booking(request):
     serializer = BookingCreateSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -27,7 +23,6 @@ def create_booking(request):
 
     try:
         with transaction.atomic():
-            # Lock the session row so concurrent bookings can't overbook.
             locked = Session.objects.select_for_update().get(pk=session.pk)
             confirmed = locked.bookings.filter(status="confirmed").count()
             if confirmed >= locked.capacity:
@@ -39,7 +34,6 @@ def create_booking(request):
                 user=request.user, session=locked, status="confirmed"
             )
     except IntegrityError:
-        # Partial unique constraint: already has an active booking.
         return Response(
             {"detail": "You already have a booking for this session."},
             status=status.HTTP_409_CONFLICT,

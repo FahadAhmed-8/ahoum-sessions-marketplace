@@ -22,3 +22,7 @@ frontend/dist/
 Thumbs.db
 .idea/
 .vscode/
+
+# Local-only helpers / generated submission docs
+gendoc.js
+Ahoum_Submission.*

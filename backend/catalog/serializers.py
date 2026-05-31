@@ -14,7 +14,7 @@ class SessionSerializer(serializers.ModelSerializer):
         model = Session
         fields = (
             "id", "title", "description", "price", "start_time",
-            "duration_minutes", "capacity", "is_active",
+            "duration_minutes", "capacity", "cover_url", "is_active",
             "creator", "booked_count", "spots_left", "is_booked_by_me",
             "created_at", "updated_at",
         )

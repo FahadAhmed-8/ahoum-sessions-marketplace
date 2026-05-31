@@ -3,26 +3,21 @@ from urllib.parse import urlencode
 
 from django.conf import settings
 from django.shortcuts import redirect
-from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User
+from .throttles import AuthRateThrottle
 from . import oauth
 
 PROVIDERS = ("google", "github")
 
 
-class AuthThrottle(ScopedRateThrottle):
-    scope = "auth"
-
-
 @api_view(["GET"])
 @permission_classes([AllowAny])
-@throttle_classes([AuthThrottle])
+@throttle_classes([AuthRateThrottle])
 def oauth_login(request, provider):
     """Redirect the browser to the provider's consent screen."""
     if provider not in PROVIDERS:
@@ -36,7 +31,7 @@ def oauth_login(request, provider):
 
 @api_view(["GET"])
 @permission_classes([AllowAny])
-@throttle_classes([AuthThrottle])
+@throttle_classes([AuthRateThrottle])
 def oauth_callback(request, provider):
     """Handle provider redirect: exchange code, upsert user, issue JWT."""
     if provider not in PROVIDERS:
@@ -59,7 +54,6 @@ def oauth_callback(request, provider):
     user = _get_or_create_user(provider, profile)
     refresh = RefreshToken.for_user(user)
 
-    # Redirect back to the frontend with tokens in the URL fragment.
     fragment = urlencode({"access": str(refresh.access_token), "refresh": str(refresh)})
     return redirect(f"{settings.FRONTEND_URL}/auth/callback#{fragment}")
 
@@ -77,7 +71,6 @@ def _get_or_create_user(provider, profile):
         },
     )
     if not created:
-        # Refresh basic profile data on each login (but never role).
         changed = False
         for field in ("email", "name", "avatar_url"):
             val = profile.get(field)
