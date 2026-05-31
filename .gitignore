@@ -1,0 +1,24 @@
+# Env / secrets
+.env
+*.env
+!.env.example
+
+# Local planning docs & references (not part of the deliverable repo)
+_local/
+
+# Python
+__pycache__/
+*.pyc
+*.sqlite3
+backend/staticfiles/
+
+# Node
+node_modules/
+frontend/dist/
+*.log
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
